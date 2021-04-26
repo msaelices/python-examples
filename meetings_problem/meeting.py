@@ -28,7 +28,13 @@ __all__ = ['find_available_slots']
 def find_available_slots(calendar1, calendar2, bounds, min_slot=30):
     """
     Return the available slots of time from two calendars,
-    the daily bounds and the meeting duration in minutes.
+    the daily bounds and the meeting duration in minutes. Example::
+
+    >>> calendar1 = [('10:00', '10:40'), ('12:00', '12:30')]
+    >>> calendar2 = [('11:20', '11:50'), ('12:00', '12:45')]
+    >>> bounds = ('9:00', '14:00')
+    >>> find_available_slots(calendar1, calendar2, bounds, 30)
+    [('09:00', '10:00'), ('10:40', '11:20'), ('12:45', '14:00')]
     """
     start, end = _slot_to_date(bounds)
     calendar1 = list(map(_slot_to_date, calendar1))

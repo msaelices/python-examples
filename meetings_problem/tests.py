@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import unittest
 
 from meeting import find_available_slots
