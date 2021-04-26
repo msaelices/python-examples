@@ -25,9 +25,6 @@ know how to use it.
 from datetime import datetime, timedelta
 
 
-__all__ = ['find_available_slots']
-
-
 def find_available_slots(calendar1, calendar2, bounds, min_slot=30):
     """
     Return the available slots of time from two calendars,
