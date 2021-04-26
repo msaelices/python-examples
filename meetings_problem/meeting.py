@@ -22,6 +22,9 @@ https://www.youtube.com/watch?v=kbwk1Tw3OhE
 from datetime import datetime, timedelta
 
 
+__all__ = ['find_available_slots']
+
+
 def str_to_date(s):
     hour, minute = s.split(':')
     return datetime.now().replace(
