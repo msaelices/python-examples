@@ -17,6 +17,9 @@ Output: A list of slots in which they may meet.
 This problem was taken from this video, but with a different implementation:
 
 https://www.youtube.com/watch?v=kbwk1Tw3OhE
+
+See the find_available_slots docstring and the tests.py file if you want to
+know how to use it.
 """
 
 from datetime import datetime, timedelta
