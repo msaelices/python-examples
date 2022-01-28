@@ -22,47 +22,126 @@ See the find_available_slots docstring and the tests.py file if you want to
 know how to use it.
 """
 
-from datetime import date, time, timedelta
+from datetime import date, time
 from datetime import datetime as dt
 
 
-def find_available_slots(calendar1, calendar2, bounds, min_slot=30):
+class Slot:
+    start: time
+    end: time
+
+    def __init__(self, start: str, end: str):
+        self.start = _str_to_time(start)
+        self.end = _str_to_time(end)
+        assert self.start < self.end
+
+    def __eq__(self, slot):
+        return self.start == slot.start and self.end == slot.end
+
+    def __contains__(self, slot):
+        return not (self.end < slot.start or self.start > slot.end)
+
+    def __and__(self, slot):
+        """Return the shared time slot. Usage::
+        >>> Slot('9:00', '10:00') & Slot('9:30', '10:30')
+        [09:30-10:00]
+        """
+        if self not in slot:
+            return None
+        return Slot.fromtime(
+            max(self.start, slot.start),
+            min(self.end, slot.end),
+        )
+
+    def __repr__(self):
+        return f'[{_time_to_str(self.start)}-{_time_to_str(self.end)}]'
+
+    @classmethod
+    def fromtime(cls, start: time, end: time):
+        return Slot(
+            _time_to_str(start),
+            _time_to_str(end),
+        )
+
+    def delta(self):
+        d = date.today()
+        start_date = dt.combine(d, self.start)
+        end_date = dt.combine(d, self.end)
+        return end_date - start_date
+
+
+class Calendar:
+    slots: list[Slot]
+
+    def __init__(self, slots: list[Slot]):
+        self.slots = slots
+
+    def __repr__(self):
+        return repr(self.slots)
+
+    def __iter__(self):
+        for slot in self.slots:
+            yield slot
+
+    def __and__(self, other):
+        """
+        Calendar intersection. Usage::
+        >>> calendar1 = Calendar([Slot('9:00', '10:00'), Slot('11:00', '12:30'), Slot('15:00', '16:30')])
+        >>> calendar2 = Calendar([Slot('8:30', '9:15'), Slot('11:30', '14:00')])
+        >>> calendar1 & calendar2
+        [[09:00-09:15], [11:30-12:30]]
+        """
+        calendar1 = iter(self)
+        calendar2 = iter(other)
+        slots = []
+        slot1, slot2 = next(calendar1), next(calendar2)
+        while True:
+            try:
+                if slot1.end < slot2.start:
+                    slot1 = next(calendar1)  # discard slot1
+                    continue
+                elif slot2.end < slot1.start:
+                    slot2 = next(calendar2)  # discard slot2
+                    continue
+                slots.append(slot1 & slot2)
+                if slot1.end < slot2.end:
+                    slot1 = next(calendar1)
+                else:
+                    slot2 = next(calendar2)
+            except StopIteration:
+                break
+        return Calendar(slots)
+
+
+def find_available_slots(slots1, slots2, bounds, meeting_duration=30):
     """
     Return the available slots of time from two calendars,
     the daily bounds and the meeting duration in minutes. Example::
 
-    >>> calendar1 = [('10:00', '10:40'), ('12:00', '12:30')]
-    >>> calendar2 = [('11:20', '11:50'), ('12:00', '12:45')]
+    >>> slots1 = [('10:00', '10:40'), ('12:00', '12:30')]
+    >>> slots2 = [('11:20', '11:50'), ('12:00', '12:45')]
     >>> bounds = ('9:00', '14:00')
-    >>> find_available_slots(calendar1, calendar2, bounds, 30)
+    >>> find_available_slots(slots1, slots2, bounds, 30)
     [('09:00', '10:00'), ('10:40', '11:20'), ('12:45', '14:00')]
     """
-    start, end = _slot_to_time(bounds)
-    calendar1 = list(map(_slot_to_time, calendar1))
-    calendar2 = list(map(_slot_to_time, calendar2))
-    t = start
+    # calculate the common calendar
+    bounds_slot = Slot(start=bounds[0], end=bounds[1])
+    calendar1 = Calendar([Slot(start, end) for start, end in slots1])
+    calendar2 = Calendar([Slot(start, end) for start, end in slots2])
+    common_calendar = calendar1 & calendar2
     slots = []
-    while t < end and (calendar1 or calendar2):
-        slot1 = calendar1[0] if calendar1 else (None, None)
-        slot2 = calendar2[0] if calendar2 else (None, None)
-        tmin = _min_time(slot1[0], slot2[0])
-        d = date.today()
-        if dt.combine(d, t) < dt.combine(d, tmin) - timedelta(minutes=min_slot):
-            # enough time to schedule a meeting
-            slots.append((t, tmin))
+    for slot in iter(common_calendar):
+        if slot not in bounds_slot:
+            continue
 
-        # move to the next time
-        t = _min_time(slot1[1], slot2[1])
+        tmp_slot = Slot.fromtime(
+            start=max(slot.start, bounds_slot.start),
+            end=min(slot.end, bounds_slot.end),
+        )
+        if tmp_slot.delta().seconds >= meeting_duration * 60:
+            slots.append(tmp_slot)
 
-        # remove consumed slots from any calendar
-        if t and t == slot1[1]:
-            calendar1.pop(0)
-        if t and t == slot2[1]:
-            calendar2.pop(0)
-    if dt.combine(d, t) < dt.combine(d, end) - timedelta(minutes=min_slot):
-        slots.append((t, end))
-
-    return [(_time_to_str(t1), _time_to_str(t2)) for t1, t2 in slots]
+    return [(_time_to_str(s.start), _time_to_str(s.end)) for s in slots]
 
 
 # Auxiliar functions
@@ -72,13 +151,5 @@ def _str_to_time(s):
     return time(int(hour), minute=int(minute))
 
 
-def _slot_to_time(slot):
-    return tuple(map(_str_to_time, slot))
-
-
-def _time_to_str(d):
-    return d.strftime('%H:%M')
-
-
-def _min_time(t1, t2):
-    return min(t1, t2) if t1 and t2 else t1 or t2
+def _time_to_str(t):
+    return f'{t:%H:%M}'
