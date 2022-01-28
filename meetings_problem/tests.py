@@ -61,10 +61,10 @@ class FindAvailableSlotsTests(unittest.TestCase):
             ('17:30', '18:30'),
         ]
         bounds = ('09:00', '18:00')
-        min_slot = 30  # in minutes
+        meeting_duration = 30  # in minutes
 
         self.assertEqual(
-            find_available_slots(slots1, slots2, bounds, min_slot),
+            find_available_slots(slots1, slots2, bounds, meeting_duration),
             [
                 ('09:00', '09:50'),
                 ('10:00', '11:40'),
