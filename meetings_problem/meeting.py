@@ -22,7 +22,8 @@ See the find_available_slots docstring and the tests.py file if you want to
 know how to use it.
 """
 
-from datetime import datetime, timedelta
+from datetime import date, time, timedelta
+from datetime import datetime as dt
 
 
 def find_available_slots(calendar1, calendar2, bounds, min_slot=30):
@@ -36,49 +37,48 @@ def find_available_slots(calendar1, calendar2, bounds, min_slot=30):
     >>> find_available_slots(calendar1, calendar2, bounds, 30)
     [('09:00', '10:00'), ('10:40', '11:20'), ('12:45', '14:00')]
     """
-    start, end = _slot_to_date(bounds)
-    calendar1 = list(map(_slot_to_date, calendar1))
-    calendar2 = list(map(_slot_to_date, calendar2))
-    d = start
+    start, end = _slot_to_time(bounds)
+    calendar1 = list(map(_slot_to_time, calendar1))
+    calendar2 = list(map(_slot_to_time, calendar2))
+    t = start
     slots = []
-    while d < end and (calendar1 or calendar2):
+    while t < end and (calendar1 or calendar2):
         slot1 = calendar1[0] if calendar1 else (None, None)
         slot2 = calendar2[0] if calendar2 else (None, None)
-        dmin = _min_date(slot1[0], slot2[0])
-        if d < dmin - timedelta(minutes=min_slot):
+        tmin = _min_time(slot1[0], slot2[0])
+        d = date.today()
+        if dt.combine(d, t) < dt.combine(d, tmin) - timedelta(minutes=min_slot):
             # enough time to schedule a meeting
-            slots.append((d, dmin))
+            slots.append((t, tmin))
 
         # move to the next time
-        d = _min_date(slot1[1], slot2[1])
+        t = _min_time(slot1[1], slot2[1])
 
         # remove consumed slots from any calendar
-        if d and d == slot1[1]:
+        if t and t == slot1[1]:
             calendar1.pop(0)
-        if d and d == slot2[1]:
+        if t and t == slot2[1]:
             calendar2.pop(0)
-    if d < end - timedelta(minutes=min_slot):
-        slots.append((d, end))
+    if dt.combine(d, t) < dt.combine(d, end) - timedelta(minutes=min_slot):
+        slots.append((t, end))
 
-    return [(_date_to_str(d1), _date_to_str(d2)) for d1, d2 in slots]
+    return [(_time_to_str(t1), _time_to_str(t2)) for t1, t2 in slots]
 
 
 # Auxiliar functions
 
-def _str_to_date(s):
+def _str_to_time(s):
     hour, minute = s.split(':')
-    return datetime.now().replace(
-        hour=int(hour), minute=int(minute), second=0, microsecond=0,
-    )
+    return time(int(hour), minute=int(minute))
 
 
-def _slot_to_date(slot):
-    return tuple(map(_str_to_date, slot))
+def _slot_to_time(slot):
+    return tuple(map(_str_to_time, slot))
 
 
-def _date_to_str(d):
+def _time_to_str(d):
     return d.strftime('%H:%M')
 
 
-def _min_date(d1, d2):
-    return min(d1, d2) if d1 and d2 else d1 or d2
+def _min_time(t1, t2):
+    return min(t1, t2) if t1 and t2 else t1 or t2
