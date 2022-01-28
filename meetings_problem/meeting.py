@@ -8,7 +8,7 @@ during these two people may meet.
 
 Input:
 
-* Two calendars with the slots currently taken today for both people.
+* Two calendars with the available slots for both people.
 * Daily bounds.
 * Meeting duration.
 
