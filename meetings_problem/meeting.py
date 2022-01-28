@@ -118,11 +118,11 @@ def find_available_slots(slots1, slots2, bounds, meeting_duration=30):
     Return the available slots of time from two calendars,
     the daily bounds and the meeting duration in minutes. Example::
 
-    >>> slots1 = [('10:00', '10:40'), ('12:00', '12:30')]
-    >>> slots2 = [('11:20', '11:50'), ('12:00', '12:45')]
+    >>> slots1 = [('08:00', '09:50'), ('10:00', '11:50'), ('12:00', '14:20')]
+    >>> slots2 = [('08:30', '11:40'), ('13:00', '14:45')]
     >>> bounds = ('9:00', '14:00')
     >>> find_available_slots(slots1, slots2, bounds, 30)
-    [('09:00', '10:00'), ('10:40', '11:20'), ('12:45', '14:00')]
+    [('09:00', '09:50'), ('10:00', '11:40'), ('13:00', '14:00')]
     """
     # calculate the common calendar
     bounds_slot = Slot(start=bounds[0], end=bounds[1])
