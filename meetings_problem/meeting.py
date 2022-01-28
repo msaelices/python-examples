@@ -56,18 +56,18 @@ class Slot:
     def __repr__(self):
         return f'[{_time_to_str(self.start)}-{_time_to_str(self.end)}]'
 
+    def delta(self):
+        d = date.today()
+        start_date = dt.combine(d, self.start)
+        end_date = dt.combine(d, self.end)
+        return end_date - start_date
+
     @classmethod
     def fromtime(cls, start: time, end: time):
         return Slot(
             _time_to_str(start),
             _time_to_str(end),
         )
-
-    def delta(self):
-        d = date.today()
-        start_date = dt.combine(d, self.start)
-        end_date = dt.combine(d, self.end)
-        return end_date - start_date
 
 
 class Calendar:
