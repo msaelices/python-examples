@@ -25,8 +25,8 @@ from __future__ import annotations
 
 from datetime import date, time
 from datetime import datetime as dt
-from re import S
 from typing import Generator, List, Optional, Tuple, TYPE_CHECKING
+
 if TYPE_CHECKING:
     from datetime import timedelta
 
@@ -122,7 +122,12 @@ class Calendar:
         return Calendar(slots)
 
 
-def find_available_slots(slots1: List[Tuple[str, str]], slots2: List[Tuple[str, str]], bounds: Tuple[str, str], meeting_duration: int = 30) -> List[Tuple[str, str]]:
+def find_available_slots(
+    slots1: List[Tuple[str, str]],
+    slots2: List[Tuple[str, str]],
+    bounds: Tuple[str, str],
+    meeting_duration: int = 30,
+) -> List[Tuple[str, str]]:
     """
     Return the available slots of time from two calendars,
     the daily bounds and the meeting duration in minutes. Example::
