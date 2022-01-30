@@ -21,9 +21,14 @@ https://www.youtube.com/watch?v=kbwk1Tw3OhE
 See the find_available_slots docstring and the tests.py file if you want to
 know how to use it.
 """
+from __future__ import annotations
 
 from datetime import date, time
 from datetime import datetime as dt
+from re import S
+from typing import Generator, List, Optional, Tuple, TYPE_CHECKING
+if TYPE_CHECKING:
+    from datetime import timedelta
 
 
 class Slot:
@@ -35,13 +40,15 @@ class Slot:
         self.end = _str_to_time(end)
         assert self.start < self.end
 
-    def __eq__(self, slot):
+    def __eq__(self, slot: object) -> bool:
+        if not isinstance(slot, Slot):
+            raise NotImplementedError()
         return self.start == slot.start and self.end == slot.end
 
-    def __contains__(self, slot):
+    def __contains__(self, slot: Slot) -> bool:
         return not (self.end < slot.start or self.start > slot.end)
 
-    def __and__(self, slot):
+    def __and__(self, slot: Slot) -> Optional[Slot]:
         """Return the shared time slot. Usage::
         >>> Slot('9:00', '10:00') & Slot('9:30', '10:30')
         [09:30-10:00]
@@ -53,17 +60,17 @@ class Slot:
             min(self.end, slot.end),
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'[{_time_to_str(self.start)}-{_time_to_str(self.end)}]'
 
-    def delta(self):
+    def delta(self) -> timedelta:
         d = date.today()
         start_date = dt.combine(d, self.start)
         end_date = dt.combine(d, self.end)
         return end_date - start_date
 
     @classmethod
-    def fromtime(cls, start: time, end: time):
+    def fromtime(cls, start: time, end: time) -> Slot:
         return Slot(
             _time_to_str(start),
             _time_to_str(end),
@@ -71,19 +78,19 @@ class Slot:
 
 
 class Calendar:
-    slots: list[Slot]
+    slots: List[Slot]
 
-    def __init__(self, slots: list[Slot]):
+    def __init__(self, slots: List[Slot]):
         self.slots = slots
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self.slots)
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Slot, None, None]:
         for slot in self.slots:
             yield slot
 
-    def __and__(self, other):
+    def __and__(self, other: Calendar) -> Calendar:
         """
         Calendar intersection. Usage::
         >>> calendar1 = Calendar([Slot('9:00', '10:00'), Slot('11:00', '12:30'), Slot('15:00', '16:30')])
@@ -103,7 +110,9 @@ class Calendar:
                 elif slot2.end < slot1.start:
                     slot2 = next(calendar2)  # discard slot2
                     continue
-                slots.append(slot1 & slot2)
+                common_slot = slot1 & slot2
+                if common_slot:
+                    slots.append(common_slot)
                 if slot1.end < slot2.end:
                     slot1 = next(calendar1)
                 else:
@@ -113,7 +122,7 @@ class Calendar:
         return Calendar(slots)
 
 
-def find_available_slots(slots1, slots2, bounds, meeting_duration=30):
+def find_available_slots(slots1: List[Tuple[str, str]], slots2: List[Tuple[str, str]], bounds: Tuple[str, str], meeting_duration: int = 30) -> List[Tuple[str, str]]:
     """
     Return the available slots of time from two calendars,
     the daily bounds and the meeting duration in minutes. Example::
@@ -146,10 +155,10 @@ def find_available_slots(slots1, slots2, bounds, meeting_duration=30):
 
 # Auxiliar functions
 
-def _str_to_time(s):
+def _str_to_time(s: str) -> time:
     hour, minute = s.split(':')
     return time(int(hour), minute=int(minute))
 
 
-def _time_to_str(t):
+def _time_to_str(t: time) -> str:
     return f'{t:%H:%M}'
